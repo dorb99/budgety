@@ -1,0 +1,16 @@
+{
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "build": {
+    "env": {
+      "DATABASE_URL": "@database_url",
+      "AUTH_CODE": "@auth_code",
+      "OWNER_NAME": "@owner_name",
+      "PARTNER_NAME": "@partner_name",
+      "SESSION_SECRET": "@session_secret"
+    }
+  }
+}

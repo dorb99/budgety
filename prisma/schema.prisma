@@ -1,0 +1,55 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id
+  displayName  String
+  isOwner      Boolean
+  transactions Transaction[] @relation("UserTransactions")
+
+  @@map("users")
+}
+
+model Category {
+  id                   String           @id @default(uuid())
+  name                 String           @unique
+  defaultBudgetAmount  Decimal?         @map("default_budget_amount")
+  transactions         Transaction[]
+  budgetOverrides      BudgetOverride[]
+
+  @@map("categories")
+}
+
+model Transaction {
+  id           String    @id @default(uuid())
+  amount       Decimal
+  occurredAt   DateTime  @default(now()) @map("occurred_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  note         String?
+  category     Category  @relation(fields: [categoryId], references: [id])
+  categoryId   String    @map("category_id")
+  payer        User      @relation("UserTransactions", fields: [payerUserId], references: [id])
+  payerUserId  String    @map("payer_user_id")
+
+  @@map("transactions")
+}
+
+model BudgetOverride {
+  id         String   @id @default(uuid())
+  month      String
+  amount     Decimal
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId String   @map("category_id")
+
+  @@unique([categoryId, month], name: "categoryId_month")
+  @@map("budget_overrides")
+}
