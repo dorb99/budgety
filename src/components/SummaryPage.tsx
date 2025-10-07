@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { createObjectCsvWriter } from 'csv-writer';
+// Removed csv-writer import - using browser-compatible solution
 
 interface Category {
   id: string;
@@ -165,38 +165,33 @@ export default function SummaryPage() {
     }
   };
 
-  const handleExportCSV = async () => {
+  const handleExportCSV = () => {
     if (!summaryData) return;
 
     try {
-      const csvWriter = createObjectCsvWriter({
-        path: 'expenses-export.csv',
-        header: [
-          { id: 'date', title: 'Date' },
-          { id: 'category', title: 'Category' },
-          { id: 'amount', title: 'Amount (ILS)' },
-          { id: 'payer', title: 'Payer' },
-          { id: 'note', title: 'Note' },
-        ],
-      });
+      // Create CSV content
+      const headers = ['Date', 'Category', 'Amount (ILS)', 'Payer', 'Note'];
+      const csvContent = [
+        headers.join(','),
+        ...summaryData.transactions.map(transaction => [
+          format(new Date(transaction.occurredAt), 'yyyy-MM-dd'),
+          `"${transaction.category.name}"`,
+          transaction.amount,
+          `"${transaction.payer.displayName}"`,
+          `"${transaction.note || ''}"`
+        ].join(','))
+      ].join('\n');
 
-      const records = summaryData.transactions.map(transaction => ({
-        date: format(new Date(transaction.occurredAt), 'yyyy-MM-dd'),
-        category: transaction.category.name,
-        amount: transaction.amount,
-        payer: transaction.payer.displayName,
-        note: transaction.note || '',
-      }));
-
-      await csvWriter.writeRecords(records);
-      
-      // Trigger download
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
-      link.href = URL.createObjectURL(new Blob([records.map(r => 
-        `${r.date},${r.category},${r.amount},${r.payer},"${r.note}"`
-      ).join('\n')], { type: 'text/csv' }));
-      link.download = 'expenses-export.csv';
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'expenses-export.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
     } catch (error) {
       setError('Failed to export CSV');
     }
